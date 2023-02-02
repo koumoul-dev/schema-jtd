@@ -1,6 +1,7 @@
 module.exports = {
   env: {
-    mocha: true
+    mocha: true,
+    node: true
   },
   plugins: [
     'no-only-tests'

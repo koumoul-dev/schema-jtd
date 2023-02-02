@@ -1,15 +1,25 @@
-const assert = require('assert')
-const fs = require('fs')
-const schema2td = require('../lib/schema2td')
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
+import assert from 'assert'
+import fs from 'fs'
+import { schema2td } from '../src/schema2td'
+
+interface Example {
+  key: string
+  skip?: boolean
+  only?: boolean
+  schema: any
+  td?: any
+  samples?: any[]
+  samplesKo?: any[]
+}
 
 describe('schema2td', () => {
   it('should fail on missing or invalid schema', () => {
-    assert.throws(() => schema2td())
     assert.throws(() => schema2td({ type: 'badtype' }))
   })
 
   let examples = fs.readdirSync('test/schema2td-examples')
-    .map(key => ({ key, ...require('./schema2td-examples/' + key) }))
+    .map((key: string) => ({ key, ...require('./schema2td-examples/' + key) } as Example))
     .filter(example => !example.skip)
   if (examples.find(e => e.only)) examples = examples.filter(e => e.only)
 
@@ -17,18 +27,17 @@ describe('schema2td', () => {
     it('should match expected output for example ' + example.key, () => {
       const { td, validateSchema, validateTd } = schema2td(example.schema)
       if (example.td) assert.deepStrictEqual(td, example.td)
-      for (const sample of example.samples || []) {
+      for (const sample of example.samples ?? []) {
         validateSchema(sample)
         if (validateSchema.errors) assert.fail('sample should pass json schema validation ' + JSON.stringify(validateSchema.errors, null, 2))
         validateTd(sample)
         if (validateTd.errors) assert.fail('sample should pass JTD validation ' + JSON.stringify(validateTd.errors, null, 2))
       }
-      for (const i in example.samplesKo || []) {
-        const sample = example.samplesKo[i]
+      for (const sample of example.samplesKo ?? []) {
         validateSchema(sample)
-        if (!validateSchema.errors) assert.fail('sample should fail on json schema validation ' + i)
+        if (!validateSchema.errors) assert.fail('sample should fail on json schema validation ' + JSON.stringify(sample))
         validateTd(sample)
-        if (!validateTd.errors) assert.fail('sample should fail on JTD validation ' + i)
+        if (!validateTd.errors) assert.fail('sample should fail on JTD validation ' + JSON.stringify(sample))
       }
     })
   }
