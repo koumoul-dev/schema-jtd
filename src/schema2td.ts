@@ -58,7 +58,7 @@ export const schema2td = (schema: any, options = {}): any => {
             fragment.td.additionalProperties = true
           }
         }
-        if (!parentFragment || !parentKeyword || !key) return
+        if (!parentFragment || !parentKeyword || key === undefined || key === null) return
         if (parentKeyword === 'properties') {
           if (parentFragment.required?.includes(key)) {
             parentFragment.td.properties = parentFragment.td.properties || {}

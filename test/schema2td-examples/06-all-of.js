@@ -1,3 +1,5 @@
+exports.only = true
+
 exports.schema = {
   required: ['foo', 'bar'],
   allOf: [
