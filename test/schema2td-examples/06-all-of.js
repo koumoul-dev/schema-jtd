@@ -1,5 +1,6 @@
 exports.schema = {
-  oneOf: [
+  required: ['foo', 'bar'],
+  allOf: [
     { properties: { foo: { type: 'string' } } },
     { properties: { bar: { type: 'string' } } }
   ]
