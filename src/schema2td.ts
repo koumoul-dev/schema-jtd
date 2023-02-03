@@ -3,6 +3,8 @@ import traverse from 'json-schema-traverse'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import AjvJtd from 'ajv/dist/jtd'
+import equal from 'fast-deep-equal'
+
 import { type SchemaEnv } from 'ajv/dist/compile'
 
 const debug = require('debug')('schema2td')
@@ -27,7 +29,7 @@ interface Schema2TdOptions {
 // TODO: implement reference resolving similar to this : https://github.com/ajv-validator/ajv/blob/b3e0cb17d0e095b5c883042b2306571be5ec86b7/lib/compile/index.ts#L296
 // use ajv as a store for the external schemas
 
-const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv) => {
+const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
   assert.ok(schema, 'schema is required')
   const uriResolver = ajv.opts.uriResolver
 
@@ -36,17 +38,29 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv) => {
       // pre is called before the children are traversed
       pre: (fragment, pointer, rootSchema, parentPointer, parentKeyword, parentFragment, key) => {
         fragment.td = fragment.td || {}
-
         if (fragment.$ref) {
           const fullRef = uriResolver.resolve(baseUri, fragment.$ref)
+
           // TODO switch baseUri here when referencing another schema
           const refSchemaEnv = ajv.refs[baseUri] as SchemaEnv
           const refFragment = refSchemaEnv.refs[fullRef] as any
           debug(`resolve ref, ref=${fragment.$ref}, baseUri=${baseUri}`)
           if (!refFragment) throw new Error(`failed to resolve ref=${fragment.$ref}`)
           if (!refFragment.td) schema2tdRecurse(refFragment, baseUri, ajv)
-          fragment.td = refFragment.td
-          fragment.type = refFragment.type
+          const parsedRef = uriResolver.parse(fullRef)
+          if (parsedRef.fragment?.startsWith('/definitions/') && !parsedRef.fragment.replace('/definitions/', '').includes('/')) {
+            const definitionName = parsedRef.fragment.replace('/definitions/', '')
+            rootSchema.td.definitions = rootSchema.td.definitions ?? {}
+            if (rootSchema.td.definitions[definitionName] && !equal(rootSchema.td.definitions[definitionName], fragment.td)) {
+              throw new Error(`conflictual definitions for name ${definitionName}`, { cause: [rootSchema.td.definitions[definitionName], fragment.td] })
+            }
+            debug(`store ref result in a definition ${definitionName}`, fragment.td)
+            rootSchema.td.definitions[definitionName] = refFragment.td
+            fragment.td = { ref: definitionName }
+          } else {
+            fragment.td = refFragment.td
+            fragment.type = refFragment.type
+          }
         }
 
         if (!fragment.type && fragment.properties) fragment.type = 'object'

@@ -9,7 +9,10 @@ exports.schema = {
 
 exports.td = {
   additionalProperties: true,
-  optionalProperties: {
+  definitions: {
     foo: { type: 'string' }
+  },
+  optionalProperties: {
+    foo: { ref: 'foo' }
   }
 }

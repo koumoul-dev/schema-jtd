@@ -23,7 +23,7 @@ describe('schema2td', () => {
     .filter(example => !example.skip)
 
   // use the CASE env var to restrict test cases, for example:
-  // DEBUG=schema2td CASE=01 npm run test
+  // CASE=01 DEBUG=schema2td npm run test
   if (process.env.CASE) {
     cases = cases.filter(c => c.key.startsWith(process.env.CASE as string))
   }
