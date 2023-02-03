@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import assert from 'assert'
 import fs from 'fs'
 import { schema2td } from '../src/schema2td'
@@ -19,6 +18,7 @@ describe('schema2td', () => {
   })
 
   let examples = fs.readdirSync('test/schema2td-examples')
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     .map((key: string) => ({ key, ...require('./schema2td-examples/' + key) } as Example))
     .filter(example => !example.skip)
   if (examples.find(e => e.only)) examples = examples.filter(e => e.only)

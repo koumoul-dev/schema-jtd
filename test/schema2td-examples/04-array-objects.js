@@ -1,4 +1,3 @@
-
 exports.schema = {
   type: 'array',
   items: {

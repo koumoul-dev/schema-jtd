@@ -3,9 +3,10 @@ import traverse from 'json-schema-traverse'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import AjvJtd from 'ajv/dist/jtd'
+import { type SchemaEnv } from 'ajv/dist/compile'
 
-const ajv = new Ajv({ strict: false })
-addFormats(ajv)
+const debug = require('debug')('schema2td')
+
 const ajvTtd = new AjvJtd()
 
 const typeMapping: Record<string, string> = {
@@ -19,27 +20,41 @@ const formatMapping: Record<string, string> = {
   'date-time': 'timestamp'
 }
 
-export const schema2td = (schema: any, options = {}): any => {
+interface Schema2TdOptions {
+  ajv?: Ajv
+}
+
+// TODO: implement reference resolving similar to this : https://github.com/ajv-validator/ajv/blob/b3e0cb17d0e095b5c883042b2306571be5ec86b7/lib/compile/index.ts#L296
+// use ajv as a store for the external schemas
+
+const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv) => {
   assert.ok(schema, 'schema is required')
-  schema = JSON.parse(JSON.stringify(schema)) as traverse.SchemaObject
-  let validateSchema, validateTd
-  try {
-    validateSchema = ajv.compile(schema)
-  } catch (err) {
-    throw new Error('input JSON schema is invalid', { cause: (err as Error).message })
-  }
+  const uriResolver = ajv.opts.uriResolver
+
   traverse(schema, {
     cb: {
       // pre is called before the children are traversed
       pre: (fragment, pointer, rootSchema, parentPointer, parentKeyword, parentFragment, key) => {
         fragment.td = fragment.td || {}
 
+        if (fragment.$ref) {
+          const fullRef = uriResolver.resolve(baseUri, fragment.$ref)
+          // TODO switch baseUri here when referencing another schema
+          const refSchemaEnv = ajv.refs[baseUri] as SchemaEnv
+          const refFragment = refSchemaEnv.refs[fullRef] as any
+          debug(`resolve ref, ref=${fragment.$ref}, baseUri=${baseUri}`)
+          if (!refFragment) throw new Error(`failed to resolve ref=${fragment.$ref}`)
+          if (!refFragment.td) schema2tdRecurse(refFragment, baseUri, ajv)
+          fragment.td = refFragment.td
+          fragment.type = refFragment.type
+        }
+
         if (!fragment.type && fragment.properties) fragment.type = 'object'
         if (!fragment.type && fragment.items) fragment.type = 'array'
 
         // console.log(fragment, pointer, parentPointer, parentKeyword, parentFragment, property)
         if (typeof fragment.type === 'string' && typeMapping[fragment.type]) {
-          fragment.td.type = typeMapping[fragment.type]
+          fragment.td = { type: typeMapping[fragment.type] }
           if (typeMapping[fragment.type] === 'string') {
             if (fragment.enum) fragment.td.enum = fragment.enum
             if (fragment.format && formatMapping[fragment.format]) {
@@ -52,14 +67,15 @@ export const schema2td = (schema: any, options = {}): any => {
       },
       // post is called after the children are traversed
       post: (fragment, pointer, rootSchema, parentPointer, parentKeyword, parentFragment, key) => {
-        if (!fragment.type) throw new Error('schema has no type', { cause: fragment })
+        if (!fragment.td) throw new Error(`schema fragment as no typedef ${pointer}`)
         if (fragment.type === 'object') {
           if (fragment.additionalProperties !== false) {
             fragment.td.additionalProperties = true
           }
         }
-        if (!parentFragment || !parentKeyword || key === undefined || key === null) return
-        if (parentKeyword === 'properties') {
+
+        if (!parentFragment || !parentKeyword) return
+        if (parentKeyword === 'properties' && key) {
           if (parentFragment.required?.includes(key)) {
             parentFragment.td.properties = parentFragment.td.properties || {}
             parentFragment.td.properties[key] = fragment.td
@@ -90,6 +106,30 @@ export const schema2td = (schema: any, options = {}): any => {
       }
     }
   })
+}
+
+export const schema2td = (schema: any, options: Schema2TdOptions = {}): any => {
+  schema = JSON.parse(JSON.stringify(schema)) as traverse.SchemaObject
+  let ajv = options.ajv
+  if (!ajv) {
+    ajv = new Ajv({ strict: false })
+    addFormats(ajv)
+  }
+
+  const baseUri = schema.$id || 'https://schema-jtd/anonymous-schema'
+
+  let validateSchema
+  try {
+    // load schema into ajv under baseUri so that we can use ajv refs cache
+    ajv.addSchema(schema, baseUri)
+    validateSchema = ajv.compile({ $ref: baseUri })
+  } catch (err) {
+    throw new Error('input JSON schema is invalid', { cause: (err as Error).message })
+  }
+
+  schema2tdRecurse(schema, baseUri, ajv)
+
+  let validateTd
   try {
     validateTd = ajvTtd.compile(schema.td)
   } catch (err) {
