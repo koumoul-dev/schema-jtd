@@ -4,10 +4,14 @@
   "description": "JSON Schema and JSON Type Definition transformation utilities (contains the schema2td and td2schema commands)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "schema2td": "bin/schema2td.js"
+  },
   "scripts": {
     "lint": "eslint --fix .",
     "test": "ts-mocha test/**/*.ts",
-    "prepublish": "tsc && rm -rf dist/test"
+    "build": "tsc -p tsconfig.build.json",
+    "prepublish": "npm run lint && npm test && npm build"
   },
   "repository": {
     "type": "git",
@@ -45,6 +49,7 @@
   "dependencies": {
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
+    "commander": "^10.0.0",
     "debug": "^4.3.4",
     "fast-deep-equal": "^3.1.3",
     "json-ptr": "^3.1.1",

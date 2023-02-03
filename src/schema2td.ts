@@ -7,6 +7,7 @@ import equal from 'fast-deep-equal'
 
 import { type SchemaEnv } from 'ajv/dist/compile'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const debug = require('debug')('schema2td')
 
 const ajvTtd = new AjvJtd()
@@ -70,7 +71,7 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
         if (typeof fragment.type === 'string' && typeMapping[fragment.type]) {
           fragment.td = { type: typeMapping[fragment.type] }
           if (typeMapping[fragment.type] === 'string') {
-            if (fragment.enum) fragment.td.enum = fragment.enum
+            if (fragment.enum) fragment.td = { enum: fragment.enum }
             if (fragment.format && formatMapping[fragment.format]) {
               fragment.td.type = formatMapping[fragment.format]
             }
@@ -103,18 +104,20 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
         }
 
         if (['oneOf', 'anyOf', 'allOf'].includes(parentKeyword)) {
-          if (parentFragment.type && fragment.type !== parentFragment.type) {
+          if (fragment.type && parentFragment.type && fragment.type !== parentFragment.type) {
             throw new Error(`contradictory type in ${parentKeyword}, parent=${parentFragment.type}, item=${fragment.type}`)
           }
-          parentFragment.type = fragment.type
-          if (fragment.type === 'object') {
-            parentFragment.td.optionalProperties = {
-              ...parentFragment.td.optionalProperties,
-              ...fragment.td.properties,
-              ...fragment.td.optionalProperties
+          if (fragment.type) {
+            parentFragment.type = fragment.type
+            if (fragment.type === 'object') {
+              parentFragment.td.optionalProperties = {
+                ...parentFragment.td.optionalProperties,
+                ...fragment.td.properties,
+                ...fragment.td.optionalProperties
+              }
+            } else {
+              parentFragment.td.type = fragment.td.type
             }
-          } else {
-            parentFragment.td.type = fragment.td.type
           }
         }
       }
@@ -148,7 +151,7 @@ export const schema2td = (schema: any, options: Schema2TdOptions = {}): any => {
     validateTd = ajvTtd.compile(schema.td)
   } catch (err) {
     console.log(schema.td)
-    throw new Error('output DTD is invalid', { cause: (err as Error).message })
+    throw new Error('output DTD is invalid', { cause: { message: (err as Error).message, td: JSON.stringify(schema.td, null, 2) } })
   }
 
   return { td: schema.td, validateSchema, validateTd }

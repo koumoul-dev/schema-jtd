@@ -1,0 +1,39 @@
+{
+  "elements": {
+    "optionalProperties": {
+      "type": {
+        "enum": [
+          "user",
+          "organization"
+        ]
+      },
+      "id": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "email": {
+        "type": "string"
+      },
+      "department": {
+        "type": "string"
+      },
+      "roles": {
+        "elements": {
+          "type": "string"
+        }
+      },
+      "operations": {
+        "elements": {
+          "type": "string"
+        }
+      },
+      "classes": {
+        "elements": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
