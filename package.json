@@ -1,6 +1,6 @@
 {
   "name": "@koumoul/schema-jtd",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "JSON Schema and JSON Type Definition transformation utilities (contains the schema2td and td2schema commands)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
