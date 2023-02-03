@@ -17,23 +17,28 @@ describe('schema2td', () => {
     assert.throws(() => schema2td({ type: 'badtype' }))
   })
 
-  let examples = fs.readdirSync('test/schema2td-examples')
+  let cases = fs.readdirSync('test/schema2td-cases')
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    .map((key: string) => ({ key, ...require('./schema2td-examples/' + key) } as Example))
+    .map((key: string) => ({ key, ...require('./schema2td-cases/' + key) } as Example))
     .filter(example => !example.skip)
-  if (examples.find(e => e.only)) examples = examples.filter(e => e.only)
 
-  for (const example of examples) {
-    it('should match expected output for example ' + example.key, () => {
-      const { td, validateSchema, validateTd } = schema2td(example.schema)
-      if (example.td) assert.deepStrictEqual(td, example.td)
-      for (const sample of example.samples ?? []) {
+  // use the CASE env var to restrict test cases, for example:
+  // DEBUG=schema2td CASE=01 npm run test
+  if (process.env.CASE) {
+    cases = cases.filter(c => c.key.startsWith(process.env.CASE as string))
+  }
+
+  for (const c of cases) {
+    it('should match expected output for case ' + c.key, () => {
+      const { td, validateSchema, validateTd } = schema2td(c.schema)
+      if (c.td) assert.deepStrictEqual(td, c.td)
+      for (const sample of c.samples ?? []) {
         validateSchema(sample)
         if (validateSchema.errors) assert.fail('sample should pass json schema validation ' + JSON.stringify(validateSchema.errors, null, 2))
         validateTd(sample)
         if (validateTd.errors) assert.fail('sample should pass JTD validation ' + JSON.stringify(validateTd.errors, null, 2))
       }
-      for (const sample of example.samplesKo ?? []) {
+      for (const sample of c.samplesKo ?? []) {
         validateSchema(sample)
         if (!validateSchema.errors) assert.fail('sample should fail on json schema validation ' + JSON.stringify(sample))
         validateTd(sample)

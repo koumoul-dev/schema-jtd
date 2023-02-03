@@ -1,5 +1,3 @@
-// exports.only = true
-
 exports.schema = {
   definitions: {
     foo: { type: 'string' }
