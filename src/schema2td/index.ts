@@ -1,16 +1,15 @@
-import assert from 'assert'
+import assert from 'assert/strict'
 import traverse from 'json-schema-traverse'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import AjvJtd from 'ajv/dist/jtd'
 import equal from 'fast-deep-equal'
-
+import rfdc from 'rfdc'
+import Debug from 'debug'
 import { type SchemaEnv } from 'ajv/dist/compile'
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const debug = require('debug')('schema2td')
+const clone = rfdc()
 
-const ajvTtd = new AjvJtd()
+const debug = Debug('schema2td')
 
 const typeMapping: Record<string, string> = {
   number: 'float64',
@@ -126,7 +125,7 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
 }
 
 export const schema2td = (schema: any, options: Schema2TdOptions = {}): any => {
-  schema = JSON.parse(JSON.stringify(schema)) as traverse.SchemaObject
+  schema = clone(schema) as traverse.SchemaObject
   let ajv = options.ajv
   if (!ajv) {
     ajv = new Ajv({ strict: false })
@@ -135,24 +134,17 @@ export const schema2td = (schema: any, options: Schema2TdOptions = {}): any => {
 
   const baseUri = schema.$id || 'https://schema-jtd/anonymous-schema'
 
-  let validateSchema
   try {
     // load schema into ajv under baseUri so that we can use ajv refs cache
     ajv.addSchema(schema, baseUri)
-    validateSchema = ajv.compile({ $ref: baseUri })
+    ajv.getSchema(baseUri)
   } catch (err) {
     throw new Error('input JSON schema is invalid', { cause: (err as Error).message })
   }
 
   schema2tdRecurse(schema, baseUri, ajv)
 
-  let validateTd
-  try {
-    validateTd = ajvTtd.compile(schema.td)
-  } catch (err) {
-    console.log(schema.td)
-    throw new Error('output DTD is invalid', { cause: { message: (err as Error).message, td: JSON.stringify(schema.td, null, 2) } })
-  }
+  if (!schema.$id) ajv.removeSchema('https://schema-jtd/anonymous-schema')
 
-  return { td: schema.td, validateSchema, validateTd }
+  return schema.td
 }

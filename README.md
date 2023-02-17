@@ -1,6 +1,12 @@
 # schema-jtd
 JSON Schema and JSON Type Definition transformation utilities (contains the schema2td and td2schema commands).
 
+## CLI usage
+
+```
+npx --package @koumoul/schema-jtd schema2td --help
+```
+
 ## Why
 
   - need help migrating from one format to another ?

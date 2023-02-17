@@ -1,6 +1,13 @@
 import assert from 'assert'
 import fs from 'fs'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
+import AjvJtd from 'ajv/dist/jtd'
 import { schema2td } from '../src/schema2td'
+
+const ajv = new Ajv({ strict: false })
+addFormats(ajv)
+const ajvTtd = new AjvJtd()
 
 interface Example {
   key: string
@@ -11,6 +18,16 @@ interface Example {
   samples?: any[]
   samplesKo?: any[]
 }
+
+/*
+  let validateTd
+  try {
+    validateTd = ajvTtd.compile(schema.td)
+  } catch (err) {
+    console.log(schema.td)
+    throw new Error('output DTD is invalid', { cause: { message: (err as Error).message, td: JSON.stringify(schema.td, null, 2) } })
+  }
+*/
 
 describe('schema2td', () => {
   it('should fail on missing or invalid schema', () => {
@@ -30,7 +47,15 @@ describe('schema2td', () => {
 
   for (const c of cases) {
     it('should match expected output for case ' + c.key, () => {
-      const { td, validateSchema, validateTd } = schema2td(c.schema)
+      const td = schema2td(c.schema)
+      const validateSchema = ajv.compile(c.schema)
+      let validateTd
+      try {
+        validateTd = ajvTtd.compile(td)
+      } catch (err) {
+        console.log(td)
+        throw new Error('output DTD is invalid', { cause: { message: (err as Error).message, td: JSON.stringify(schema.td, null, 2) } })
+      }
       if (c.td) assert.deepStrictEqual(td, c.td)
       for (const sample of c.samples ?? []) {
         validateSchema(sample)

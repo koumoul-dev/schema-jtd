@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "rootDir": "./"
+  },
   "include": ["src", "test"]
 }

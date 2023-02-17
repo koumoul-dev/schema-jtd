@@ -19,8 +19,8 @@ program
     const debug = require('debug')('schema2td')
     debug(`schema2td args=${JSON.stringify(this.args)}, opts=${JSON.stringify(opts)}`)
     const schema = require(resolve(this.args[0]))
-    const { schema2td } = require('../dist/schema2td')
-    const { td } = await schema2td(schema)
+    const { schema2td } = require('../schema2td')
+    const td = schema2td(schema)
     const out = JSON.stringify(td, null, 2)
     if (this.args[1]) {
       await writeFile(this.args[1], out)
