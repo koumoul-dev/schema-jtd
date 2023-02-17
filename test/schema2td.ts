@@ -44,7 +44,8 @@ describe('schema2td', () => {
         validateTd = ajvTtd.compile(td)
       } catch (err) {
         console.log(td)
-        throw new Error('output DTD is invalid', { cause: { message: (err as Error).message, td: JSON.stringify(schema.td, null, 2) } })
+        console.error({ message: (err as Error).message, td: JSON.stringify(td, null, 2) })
+        throw new Error('output DTD is invalid')
       }
       if (c.td) assert.deepStrictEqual(td, c.td)
       for (const sample of c.samples ?? []) {

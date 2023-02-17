@@ -86,6 +86,10 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
           if (fragment.additionalProperties !== false) {
             fragment.td.additionalProperties = true
           }
+          // case of an empty object (or open object if additionalProperties is true)
+          if (!fragment.td.properties && !fragment.td.optionalProperties) {
+            fragment.td.properties = {}
+          }
         }
 
         if (!parentFragment || !parentKeyword) return
