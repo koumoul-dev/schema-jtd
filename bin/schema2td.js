@@ -4,6 +4,7 @@ const { Command } = require('commander')
 const program = new Command()
 const { writeFile } = require('fs').promises
 const { resolve } = require('path')
+const AjvJtd = require('ajv/dist/jtd')
 const { version } = require('../package.json')
 
 program
@@ -18,9 +19,18 @@ program
     if (opts.debug) process.env.DEBUG = 'schema2td'
     const debug = require('debug')('schema2td')
     debug(`schema2td args=${JSON.stringify(this.args)}, opts=${JSON.stringify(opts)}`)
+
     const schema = require(resolve(this.args[0]))
     const { schema2td } = require('../schema2td')
     const td = schema2td(schema)
+
+    const ajvTtd = new AjvJtd()
+    try {
+      ajvTtd.compile(td)
+    } catch (err) {
+      throw new Error('output DTD is invalid', { cause: { message: err.message, td: JSON.stringify(schema.td, null, 2) } })
+    }
+
     const out = JSON.stringify(td, null, 2)
     if (this.args[1]) {
       await writeFile(this.args[1], out)

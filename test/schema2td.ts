@@ -19,16 +19,6 @@ interface Example {
   samplesKo?: any[]
 }
 
-/*
-  let validateTd
-  try {
-    validateTd = ajvTtd.compile(schema.td)
-  } catch (err) {
-    console.log(schema.td)
-    throw new Error('output DTD is invalid', { cause: { message: (err as Error).message, td: JSON.stringify(schema.td, null, 2) } })
-  }
-*/
-
 describe('schema2td', () => {
   it('should fail on missing or invalid schema', () => {
     assert.throws(() => schema2td({ type: 'badtype' }))
