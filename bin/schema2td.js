@@ -27,7 +27,8 @@ program
     const ajv = new Ajv({ strict: false })
     addFormats(ajv)
     for (const add of opts.add) {
-      ajv.addSchema(require(add))
+      debug(`add schema ${add}`)
+      ajv.addSchema(require(resolve(add)))
     }
     const { schema2td } = require('../schema2td')
     const td = schema2td(schema, { ajv })
