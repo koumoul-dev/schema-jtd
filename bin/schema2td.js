@@ -5,6 +5,8 @@ const program = new Command()
 const { writeFile } = require('fs').promises
 const { resolve } = require('path')
 const AjvJtd = require('ajv/dist/jtd')
+const Ajv = require('ajv')
+const addFormats = require('ajv-formats')
 const { version } = require('../package.json')
 
 program
@@ -12,6 +14,7 @@ program
   .description('transform a JSON schema into a JSON Type Definition')
   .version(version)
   .option('--debug', 'activate debug logs')
+  .option('-a, --add <path...>', 'paths of additional schemas containing declarations')
   .argument('<in>', 'path of a JSON schema file')
   .argument('[out]', 'path of the JTD file to create')
   .action(async function () {
@@ -21,8 +24,13 @@ program
     debug(`schema2td args=${JSON.stringify(this.args)}, opts=${JSON.stringify(opts)}`)
 
     const schema = require(resolve(this.args[0]))
+    const ajv = new Ajv({ strict: false })
+    addFormats(ajv)
+    for (const add of opts.add) {
+      ajv.addSchema(require(add))
+    }
     const { schema2td } = require('../schema2td')
-    const td = schema2td(schema)
+    const td = schema2td(schema, { ajv })
 
     const ajvTtd = new AjvJtd()
     try {
