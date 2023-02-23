@@ -51,10 +51,10 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
           if (parsedRef.fragment?.startsWith('/definitions/') && !parsedRef.fragment.replace('/definitions/', '').includes('/')) {
             const definitionName = parsedRef.fragment.replace('/definitions/', '')
             rootSchema.td.definitions = rootSchema.td.definitions ?? {}
-            if (rootSchema.td.definitions[definitionName] && !equal(rootSchema.td.definitions[definitionName], fragment.td)) {
+            if (rootSchema.td.definitions[definitionName] && !equal(rootSchema.td.definitions[definitionName], refFragment.td)) {
               throw new Error(`conflictual definitions for name ${definitionName}`, { cause: [rootSchema.td.definitions[definitionName], fragment.td] })
             }
-            debug(`store ref result in a definition ${definitionName}`, fragment.td)
+            debug(`store ref result in a definition ${definitionName}`, refFragment.td)
             rootSchema.td.definitions[definitionName] = refFragment.td
             fragment.td = { ref: definitionName }
           } else {
