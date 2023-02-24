@@ -96,17 +96,11 @@ exports.schema = {
         },
         isAdmin: {
           type: 'integer',
-          enum: [
-            0,
-            1
-          ]
+          enum: [0, 1]
         },
         adminMode: {
           type: 'integer',
-          enum: [
-            0,
-            1
-          ]
+          enum: [0, 1]
         },
         asAdmin: {
           $ref: '#/definitions/userRef'
@@ -117,10 +111,7 @@ exports.schema = {
         },
         ipa: {
           type: 'integer',
-          enum: [
-            0,
-            1
-          ]
+          enum: [0, 1]
         }
       }
     },
@@ -134,7 +125,8 @@ exports.schema = {
       ],
       properties: {
         type: {
-          type: 'string'
+          type: 'string',
+          enum: ['user', 'organization']
         },
         id: {
           type: 'string'
@@ -155,13 +147,61 @@ exports.schema = {
 
 exports.td = {
   definitions: {
-    user: {},
+    user: {
+      optionalProperties: {
+        adminMode: {
+          type: 'int32'
+        },
+        asAdmin: {
+          ref: 'userRef'
+        },
+        ipa: {
+          type: 'int32'
+        },
+        isAdmin: {
+          type: 'int32'
+        },
+        pd: {
+          type: 'string'
+        }
+      },
+      properties: {
+        email: {
+          type: 'string'
+        },
+        id: {
+          type: 'string'
+        },
+        name: {
+          type: 'string'
+        },
+        organizations: {
+          elements: {
+            ref: 'organizationMembership'
+          }
+        }
+      }
+    },
     organizationMembership: {
-      properties: { id: { type: 'string' }, name: { type: 'string' }, role: { type: 'string' } },
-      optionalProperties: { department: { type: 'string' }, departmentName: { type: 'string' }, dflt: { type: 'boolean' } }
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        role: { type: 'string' }
+      },
+      optionalProperties: {
+        department: { type: 'string' },
+        departmentName: { type: 'string' },
+        dflt: { type: 'boolean' }
+      }
     },
     account: {
-      properties: { type: { type: 'string' }, id: { type: 'string' }, name: { type: 'string' } },
+      properties: {
+        type: {
+          enum: ['user', 'organization']
+        },
+        id: { type: 'string' },
+        name: { type: 'string' }
+      },
       optionalProperties: { department: { type: 'string' }, departmentName: { type: 'string' } }
     },
     userRef: {

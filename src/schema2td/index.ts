@@ -43,9 +43,11 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
 
           // TODO switch baseUri here when referencing another schema
           const refSchemaEnv = ajv.refs[baseUri] as SchemaEnv
-          const refFragment = refSchemaEnv.refs[fullRef] as any
+          let refFragment = refSchemaEnv.refs[fullRef] as any
+          if (refFragment.schema) refFragment = refFragment.schema
           debug(`resolve ref, ref=${fragment.$ref}, baseUri=${baseUri}`)
           if (!refFragment) throw new Error(`failed to resolve ref=${fragment.$ref}`)
+
           if (!refFragment.td) schema2tdRecurse(refFragment, baseUri, ajv)
           const parsedRef = uriResolver.parse(fullRef)
           if (parsedRef.fragment?.startsWith('/definitions/') && !parsedRef.fragment.replace('/definitions/', '').includes('/')) {
@@ -104,6 +106,18 @@ const schema2tdRecurse = (schema: any, baseUri: string, ajv: Ajv): void => {
         }
         if (parentKeyword === 'items') {
           parentFragment.td.elements = fragment.td
+        }
+
+        if (fragment.td.definitions) {
+          parentFragment.td.definitions = parentFragment.td.definitions || {}
+          for (const key of Object.keys(fragment.td.definitions)) {
+            if (parentFragment.td.definitions[key] && !equal(parentFragment.td.definitions[key], fragment.td.definitions[key])) {
+              console.log(parentFragment.td.definitions[key], fragment.td.definitions[key])
+              throw new Error(`conflictual definitions for name ${key}`, { cause: [parentFragment.td.definitions[key], fragment.td.definitions[key]] })
+            }
+            parentFragment.td.definitions[key] = fragment.td.definitions[key]
+          }
+          delete fragment.td.definitions
         }
 
         if (['oneOf', 'anyOf', 'allOf'].includes(parentKeyword)) {
